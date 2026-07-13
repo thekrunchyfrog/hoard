@@ -1,0 +1,30 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: hoard-backend
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+    networks:
+      - hoard-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: hoard-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - hoard-network
+    environment:
+      - VITE_API_URL=http://backend:5000/api
+
+networks:
+  hoard-network:
+    driver: bridge
