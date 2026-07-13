@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import logo from './assets/images/dragonLogo.webp';
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
@@ -48,7 +49,9 @@ function App() {
   };
 
   return (
+    
     <div className="container mt-5">
+      <div><img src={logo} alt="Dragon Logo" height="100" width="100" /></div> 
       <div className="card">
         <div className="card-header bg-primary text-white">
           <h1 className="mb-0">Toy Collection App</h1>
@@ -82,7 +85,7 @@ function App() {
           {selectedCollection && (
             <div>
               <h3 className="mt-4">
-                Items in Collection: {selectedCollection}
+                Items in Collection: {collections.find(c => c.collection_table === selectedCollection)?.collection_name}
               </h3>
               {loading ? (
                 <div className="alert alert-info">Loading items...</div>
@@ -92,7 +95,7 @@ function App() {
                     <thead className="table-dark">
                       <tr>
                         <th>ID</th>
-                        <th>Name</th>
+                        <th>Fashion Name</th>
                         <th>Description</th>
                         <th>Category</th>
                         <th>Year</th>
@@ -102,7 +105,7 @@ function App() {
                       {items.map((item) => (
                         <tr key={item.id}>
                           <td>{item.id}</td>
-                          <td>{item.name}</td>
+                          <td>{item.fashion_name}</td>
                           <td>{item.description || 'N/A'}</td>
                           <td>{item.category || 'N/A'}</td>
                           <td>{item.year || 'N/A'}</td>
