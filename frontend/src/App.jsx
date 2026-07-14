@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import logo from './assets/images/dragonLogo.webp';
+import React, { useState, useEffect } from "react";
+import logo from "./assets/images/dragonLogo.webp";
+import DyTable from "./assets/components/DyTable";
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = "http://localhost:5000/api";
 
 function App() {
   const [collections, setCollections] = useState([]);
   const [selectedCollection, setSelectedCollection] = useState(null);
   const [items, setItems] = useState([]);
+  const [headers, setHeaders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -24,7 +26,7 @@ function App() {
         setSelectedCollection(data[0].id);
       }
     } catch (err) {
-      setError('Failed to fetch collections: ' + err.message);
+      setError("Failed to fetch collections: " + err.message);
     }
   };
 
@@ -32,11 +34,14 @@ function App() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/collections/${collectionId}/items`);
+      const response = await fetch(
+        `${API_BASE_URL}/collections/${collectionId}/items`,
+      );
       const data = await response.json();
       setItems(data);
+      setHeaders(data.length > 0 ? Object.keys(data[0]) : []);
     } catch (err) {
-      setError('Failed to fetch items: ' + err.message);
+      setError("Failed to fetch items: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -49,9 +54,10 @@ function App() {
   };
 
   return (
-    
     <div className="container mt-5">
-      <div><img src={logo} alt="Dragon Logo" height="100" width="100" /></div> 
+      <div>
+        <img src={logo} alt="Dragon Logo" height="100" width="100" />
+      </div>
       <div className="card">
         <div className="card-header bg-primary text-white">
           <h1 className="mb-0">Toy Collection App</h1>
@@ -64,12 +70,17 @@ function App() {
             <select
               id="collectionSelect"
               className="form-select"
-              value={selectedCollection || ''}
+              value={selectedCollection || ""}
               onChange={handleCollectionChange}
             >
-              <option key="placeholder" value="">-- Select a Collection --</option>
+              <option key="placeholder" value="">
+                -- Select a Collection --
+              </option>
               {collections.map((collection) => (
-                <option key={collection.collection_name} value={collection.collection_table}>
+                <option
+                  key={collection.collection_name}
+                  value={collection.collection_table}
+                >
                   {collection.collection_name}
                 </option>
               ))}
@@ -85,35 +96,17 @@ function App() {
           {selectedCollection && (
             <div>
               <h3 className="mt-4">
-                Items in Collection: {collections.find(c => c.collection_table === selectedCollection)?.collection_name}
+                Items in Collection:{" "}
+                {
+                  collections.find(
+                    (c) => c.collection_table === selectedCollection,
+                  )?.collection_name
+                }
               </h3>
               {loading ? (
                 <div className="alert alert-info">Loading items...</div>
               ) : items.length > 0 ? (
-                <div className="table-responsive">
-                  <table className="table table-striped table-hover">
-                    <thead className="table-dark">
-                      <tr>
-                        <th>ID</th>
-                        <th>Fashion Name</th>
-                        <th>Description</th>
-                        <th>Category</th>
-                        <th>Year</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {items.map((item) => (
-                        <tr key={item.id}>
-                          <td>{item.id}</td>
-                          <td>{item.fashion_name}</td>
-                          <td>{item.description || 'N/A'}</td>
-                          <td>{item.category || 'N/A'}</td>
-                          <td>{item.year || 'N/A'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <DyTable headers={headers} items={items} />
               ) : (
                 <div className="alert alert-info">
                   No items found in this collection.
