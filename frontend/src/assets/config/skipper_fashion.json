@@ -1,0 +1,38 @@
+[
+  {
+    "field_name": "fashion_name",
+    "header_name": "Fashion Name"
+  },
+  {
+    "field_name": "fashion_number",
+    "header_name": "Fashion Number"
+  },
+  {
+    "field_name": "years_available",
+    "header_name": "Years Available"
+  },
+  {
+    "field_name": "is_complete",
+    "header_name": "Complete"
+  },
+  {
+    "field_name": "missing_items",
+    "header_name": "Missing Items"
+  },
+  {
+    "field_name": "notes",
+    "header_name": "Notes"
+  },
+  {
+    "field_name": "is_on_doll",
+    "header_name": "On Doll"
+  },
+  {
+    "field_name": "price_paid",
+    "header_name": "Paid Price"
+  },
+  {
+    "field_name": "created_at",
+    "header_name": "Date Added"
+  }
+]

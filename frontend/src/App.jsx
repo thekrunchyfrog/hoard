@@ -106,7 +106,10 @@ function App() {
               {loading ? (
                 <div className="alert alert-info">Loading items...</div>
               ) : items.length > 0 ? (
-                <DyTable headers={headers} items={items} />
+                <DyTable
+                  selectedCollection={selectedCollection}
+                  items={items}
+                />
               ) : (
                 <div className="alert alert-info">
                   No items found in this collection.
