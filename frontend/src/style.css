@@ -1,0 +1,7 @@
+@source "../node_modules/@pxlkit/ui-kit";
+@import "tailwindcss";
+@import "@pxlkit/ui-kit/styles.css";
+
+body {
+  font-family: 'Press Start 2P';
+}
