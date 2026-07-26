@@ -1,0 +1,26 @@
+[
+  {
+    "field_name": "lunchbox_name",
+    "header_name": "Name"
+  },
+  {
+    "field_name": "lunchbox_condition",
+    "header_name": "Lunchbox Condition"
+  },
+  {
+    "field_name": "lunchbox_condition_notes",
+    "header_name": "LB Condition Notes"
+  },
+  {
+    "field_name": "has_thermos",
+    "header_name": "Thermos?"
+  },
+  {
+    "field_name": "thermos_condition",
+    "header_name": "Thermos Condition"
+  },
+  {
+    "field_name": "thermos_condition_notes",
+    "header_name": "Thermos Condition Notes"
+  }
+]

@@ -40,6 +40,7 @@ export function CollectionSelection({ onCollectionSelect }) {
       const data = await response.json();
       setItems(data);
       setHeaders(data.length > 0 ? Object.keys(data[0]) : []);
+      console.log("Fetched items:", data);
     } catch (err) {
       setError("Failed to fetch items: " + err.message);
     } finally {
@@ -48,7 +49,6 @@ export function CollectionSelection({ onCollectionSelect }) {
   };
 
   const handleCollectionChange = (e) => {
-    console.log("Selected collection:", e);
     const collectionId = e;
     setSelectedCollection(collectionId);
     if (collectionId && collectionId !== "") {
@@ -61,16 +61,17 @@ export function CollectionSelection({ onCollectionSelect }) {
 
   return (
     <div>
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
-        <div className="px-20 py-20">
+      <div className="rounded-xl shadow-lg">
+        <div className="px-20 py-5">
           <div>
             <PixelSelect
-              tone="purple"
+              tone="green"
+              surface="pixel"
               label="Select a Collection"
+              placeholder="-- Select a Collection --"
               value={selectedCollection || ""}
               onChange={(e) => handleCollectionChange(e)}
               options={[
-                { label: "-- Select a Collection --", value: "" },
                 ...collections.map((collection) => ({
                   label: collection.collection_name,
                   value: collection.collection_table,

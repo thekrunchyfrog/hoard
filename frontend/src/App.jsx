@@ -5,7 +5,7 @@ import { HoardHeader, CollectionSelection } from "./assets/components";
 function App() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+      <div className="rounded-xl shadow-lg">
         <HoardHeader />
         <CollectionSelection />
       </div>
