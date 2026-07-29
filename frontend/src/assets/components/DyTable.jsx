@@ -1,4 +1,4 @@
-import { PixelTable, PixelBadge } from "@pxlkit/ui-kit";
+import { PixelTable, PixelBadge, PixelProgress } from "@pxlkit/ui-kit";
 import { useState } from "react";
 import skipper_fashion_mappings from "../config/skipper_fashion.json";
 import lunchbox_mappings from "../config/lunchbox.json";
@@ -46,41 +46,49 @@ export function DyTable({ items, selectedCollection }) {
   };
 
   // Sort the data based on current sort state
-  const sortedData = [...items].map((item) => {
-    const row = {};
-    mappings.forEach((mapping) => {
-      let value = item[mapping.field_name];
-      // Only convert to checkmark if field_name starts with "is_" or "has_"
-      if (
-        (mapping.field_name.startsWith("is_") ||
-          mapping.field_name.startsWith("has_")) &&
-        value === 1
-      ) {
-        value = <PixelBadge tone="green">yes</PixelBadge>;
-      } else if (
-        (mapping.field_name.startsWith("is_") ||
-          mapping.field_name.startsWith("has_")) &&
-        value === 0
-      ) {
-        value = <PixelBadge tone="red">no</PixelBadge>;
-      }
-      row[mapping.field_name] =
-        value == null || value === "" ? "-" : value;
-    });
-    return row;
-  }).sort((a, b) => {
-    if (!sortState) return 0;
-    const { sortKey, direction } = sortState;
-    const aVal = a[sortKey];
-    const bVal = b[sortKey];
+  const sortedData = [...items]
+    .map((item) => {
+      const row = {};
+      mappings.forEach((mapping) => {
+        let value = item[mapping.field_name];
+        // Only convert to checkmark if field_name starts with "is_" or "has_"
+        if (
+          (mapping.field_name.startsWith("is_") ||
+            mapping.field_name.startsWith("has_")) &&
+          value === 1
+        ) {
+          value = <PixelBadge tone="green">yes</PixelBadge>;
+        } else if (
+          (mapping.field_name.startsWith("is_") ||
+            mapping.field_name.startsWith("has_")) &&
+          value === 0
+        ) {
+          value = <PixelBadge tone="red">no</PixelBadge>;
+        }
+        if (
+          mapping.field_name.includes("condition") &&
+          !mapping.field_name.includes("_notes") &&
+          value !== null
+        ) {
+          value = <PixelProgress showValue={false} value={value * 10} />;
+        }
+        row[mapping.field_name] = value == null || value === "" ? "-" : value;
+      });
+      return row;
+    })
+    .sort((a, b) => {
+      if (!sortState) return 0;
+      const { sortKey, direction } = sortState;
+      const aVal = a[sortKey];
+      const bVal = b[sortKey];
 
-    if (aVal === bVal) return 0;
-    if (direction === "asc") {
-      return aVal > bVal ? 1 : -1;
-    } else {
-      return bVal > aVal ? 1 : -1;
-    }
-  });
+      if (aVal === bVal) return 0;
+      if (direction === "asc") {
+        return aVal > bVal ? 1 : -1;
+      } else {
+        return bVal > aVal ? 1 : -1;
+      }
+    });
 
   return (
     <div className="overflow-x-auto">
@@ -92,9 +100,6 @@ export function DyTable({ items, selectedCollection }) {
         bordered={true}
         surface="pixel"
         tone="retro-green"
-        font-family="pixel"
-        font-size="sm"
-        text-color="retro-green"
       />
     </div>
   );
