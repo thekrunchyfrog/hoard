@@ -9,7 +9,8 @@ function Cell({ children }) {
   );
 }
 
-export function DrawerContent() {
+export function DrawerContent({ items }) {
+  console.log("DrawerContent items:", items);
   return (
     <div className="p-4">
       <img

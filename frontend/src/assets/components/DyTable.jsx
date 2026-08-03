@@ -11,6 +11,7 @@ const configMap = {
 
 export function DyTable({ items, selectedCollection }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [selectedItemId, setSelectedItemId] = useState(null);
 
   const mappings = configMap[selectedCollection] || [];
 
@@ -97,8 +98,8 @@ export function DyTable({ items, selectedCollection }) {
     });
 
   const handleRowClick = (row, rowIndex) => {
-    console.log("Row clicked:", row, "Index:", rowIndex);
     setIsDrawerOpen(true);
+    setSelectedItemId(row.lunchbox_id || row.skipper_fashion_id);
   };
 
   return (
@@ -113,7 +114,14 @@ export function DyTable({ items, selectedCollection }) {
         tone="retro-green"
         onRowClick={handleRowClick}
       />
-      <Drawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
+      <Drawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        items={
+          items.find((u) => u.lunchbox_id === selectedItemId) ||
+          items.find((u) => u.skipper_fashion_id === selectedItemId)
+        }
+      />
     </div>
   );
 }
