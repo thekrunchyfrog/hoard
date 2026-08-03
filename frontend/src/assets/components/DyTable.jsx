@@ -1,5 +1,6 @@
 import { PixelTable, PixelBadge, PixelProgress } from "@pxlkit/ui-kit";
 import { useState } from "react";
+import { Drawer } from "./Drawer";
 import skipper_fashion_mappings from "../config/skipper_fashion.json";
 import lunchbox_mappings from "../config/lunchbox.json";
 
@@ -9,6 +10,8 @@ const configMap = {
 };
 
 export function DyTable({ items, selectedCollection }) {
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
   const mappings = configMap[selectedCollection] || [];
 
   // Default sort by first column (ascending)
@@ -35,11 +38,14 @@ export function DyTable({ items, selectedCollection }) {
   }
 
   // Add sortable property to column definitions that have sortable data
-  const columns = mappings.map((mapping) => ({
-    header: mapping.header_name,
-    key: mapping.field_name,
-    sortable: true,
-  }));
+  // Filter out hidden columns
+  const columns = mappings
+    .filter((mapping) => !mapping.hidden)
+    .map((mapping) => ({
+      header: mapping.header_name,
+      key: mapping.field_name,
+      sortable: true,
+    }));
 
   const handleSortChange = (next) => {
     setSortState(next);
@@ -90,6 +96,11 @@ export function DyTable({ items, selectedCollection }) {
       }
     });
 
+  const handleRowClick = (row, rowIndex) => {
+    console.log("Row clicked:", row, "Index:", rowIndex);
+    setIsDrawerOpen(true);
+  };
+
   return (
     <div className="overflow-x-auto">
       <PixelTable
@@ -100,7 +111,9 @@ export function DyTable({ items, selectedCollection }) {
         bordered={true}
         surface="pixel"
         tone="retro-green"
+        onRowClick={handleRowClick}
       />
+      <Drawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
     </div>
   );
 }

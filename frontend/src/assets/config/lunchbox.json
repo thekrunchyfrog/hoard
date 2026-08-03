@@ -22,5 +22,10 @@
   {
     "field_name": "thermos_condition_notes",
     "header_name": "Thermos Condition Notes"
+  },
+  {
+    "field_name": "lunchbox_id",
+    "header_name": "Lunchbox ID",
+    "hidden": true
   }
 ]
