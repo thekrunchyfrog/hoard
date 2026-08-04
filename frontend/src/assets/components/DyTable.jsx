@@ -117,7 +117,7 @@ export function DyTable({ items, selectedCollection }) {
       <Drawer
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
-        items={
+        item={
           items.find((u) => u.lunchbox_id === selectedItemId) ||
           items.find((u) => u.skipper_fashion_id === selectedItemId)
         }

@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
 import * as mariadb from 'mariadb';
+import { readdir } from 'node:fs/promises';
 
 dotenv.config();
 
@@ -55,6 +56,20 @@ app.get('/api/collections/:id/items', async (req, res) => {
     const sql = `SELECT * FROM ${id}`;
     const rows = await pool.query(sql);
     res.json(rows);
+  } catch (err) {
+    console.error('Error fetching items:', err.message);
+    res.status(500).json({ error: 'Failed to fetch items' });
+  }
+});
+
+// Get items photos by photo_location
+app.get('/api/photos/:photo_location', async (req, res) => {
+  try {
+    const { photo_location } = req.params;
+    const directoryPath = `./src/assets/images/${photo_location}`; 
+    const files = await readdir(directoryPath);
+    files.forEach(file => console.log(file));
+    res.json(files);
   } catch (err) {
     console.error('Error fetching items:', err.message);
     res.status(500).json({ error: 'Failed to fetch items' });

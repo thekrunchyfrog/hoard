@@ -2,3 +2,6 @@
 @import "tailwindcss";
 @import "@pxlkit/ui-kit/styles.css";
 
+h3 {
+  @apply font-bold mb-4 font-mono;
+}

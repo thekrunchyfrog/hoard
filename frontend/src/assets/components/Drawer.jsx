@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { DrawerContent } from "./index";
 
-export function Drawer({ isOpen, onClose, items }) {
+export function Drawer({ isOpen, onClose, item }) {
   // Prevent body scrolling when the drawer is open
   useEffect(() => {
     if (isOpen) {
@@ -41,8 +41,7 @@ export function Drawer({ isOpen, onClose, items }) {
           ✕
         </button>
 
-        {/* Drawer Content */}
-        {<DrawerContent items={items} />}
+        {item && <DrawerContent item={item} />}
       </div>
     </>
   );
