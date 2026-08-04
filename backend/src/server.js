@@ -64,12 +64,13 @@ app.get('/api/collections/:id/items', async (req, res) => {
 
 // Get items photos by photo_location
 app.get('/api/photos/:photo_location', async (req, res) => {
+  let foto_content = [];
   try {
     const { photo_location } = req.params;
-    const directoryPath = `./src/assets/images/${photo_location}`; 
+    const directoryPath = `/app/images/${photo_location}`; 
     const files = await readdir(directoryPath);
-    files.forEach(file => console.log(file));
-    res.json(files);
+    files.forEach(file => foto_content.push({ url: `/images/${photo_location}/${file}`, label: file.match(/_([^\.]+)\./)?.[1] || file }));
+    res.json(foto_content);
   } catch (err) {
     console.error('Error fetching items:', err.message);
     res.status(500).json({ error: 'Failed to fetch items' });

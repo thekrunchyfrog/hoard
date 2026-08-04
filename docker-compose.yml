@@ -7,6 +7,8 @@ services:
     ports:
       - "5000:5000"
     restart: unless-stopped
+    volumes:
+      - webapp-images:/app/images
     networks:
       - hoard-network
 
@@ -20,10 +22,16 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
+    volumes:
+      - webapp-images:/app/public/images
     networks:
       - hoard-network
     environment:
       - VITE_API_URL=http://backend:5000/api
+
+volumes:
+  webapp-images:
+    driver: local
 
 networks:
   hoard-network:

@@ -14,6 +14,9 @@ COPY src ./src
 # Copy environment file
 COPY .env .env
 
+# Create images directory
+RUN mkdir -p /app/images
+
 # Expose port
 EXPOSE 5000
 

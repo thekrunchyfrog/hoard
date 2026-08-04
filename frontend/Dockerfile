@@ -15,6 +15,7 @@ RUN npm install
 COPY src ./src
 COPY index.html ./
 COPY vite.config.js ./
+COPY public ./public
 
 # Copy environment file
 COPY .env .env
