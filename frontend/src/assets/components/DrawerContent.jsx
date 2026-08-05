@@ -23,7 +23,7 @@ export function DrawerContent({ item }) {
   return (
     <div>
       <center>
-        <ImageSpinner picFolder="pac" />
+        <ImageSpinner picFolder={item.photo_location} />
       </center>
       <div>
         <PixelCard
@@ -31,7 +31,7 @@ export function DrawerContent({ item }) {
           title="Lunchbox Details"
           icon={<PxlKitIcon icon={InfoCircle} size={32} />}
         >
-          <PixelGrid cols={1} gap={1}>
+          <PixelGrid cols={2} gap={1}>
             <Cell>{item.lunchbox_name}</Cell>
             <Cell>
               <PixelProgress
