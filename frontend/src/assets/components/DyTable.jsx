@@ -18,7 +18,7 @@ export function DyTable({ items, selectedCollection }) {
   // Default sort by first column (ascending)
   const firstColumnKey = mappings[0]?.field_name;
   const defaultSortState = firstColumnKey
-    ? { sortKey: firstColumnKey, direction: "asc" }
+    ? { key: firstColumnKey, dir: "asc" }
     : null;
 
   const [sortState, setSortState] = useState(defaultSortState);
@@ -52,50 +52,64 @@ export function DyTable({ items, selectedCollection }) {
     setSortState(next);
   };
 
-  // Sort the data based on current sort state
-  const sortedData = [...items]
-    .map((item) => {
-      const row = {};
-      mappings.forEach((mapping) => {
-        let value = item[mapping.field_name];
-        // Only convert to checkmark if field_name starts with "is_" or "has_"
-        if (
-          (mapping.field_name.startsWith("is_") ||
-            mapping.field_name.startsWith("has_")) &&
-          value === 1
-        ) {
-          value = <PixelBadge tone="green">yes</PixelBadge>;
-        } else if (
-          (mapping.field_name.startsWith("is_") ||
-            mapping.field_name.startsWith("has_")) &&
-          value === 0
-        ) {
-          value = <PixelBadge tone="red">no</PixelBadge>;
-        }
-        if (
-          mapping.field_name.includes("condition") &&
-          !mapping.field_name.includes("_notes") &&
-          value !== null
-        ) {
-          value = <PixelProgress showValue={false} value={value * 10} />;
-        }
-        row[mapping.field_name] = value == null || value === "" ? "-" : value;
-      });
-      return row;
-    })
-    .sort((a, b) => {
-      if (!sortState) return 0;
-      const { sortKey, direction } = sortState;
-      const aVal = a[sortKey];
-      const bVal = b[sortKey];
+  // Helper to render cell values (handles special column types)
+  const renderValue = (mapping, value) => {
+    if (value == null || value === "") return "-";
+    // Only convert to badge if field_name starts with "is_" or "has_"
+    if (
+      (mapping.field_name.startsWith("is_") ||
+        mapping.field_name.startsWith("has_")) &&
+      (value === 1 || value === 0)
+    ) {
+      return value === 1
+        ? <PixelBadge tone="green">yes</PixelBadge>
+        : <PixelBadge tone="red">no</PixelBadge>;
+    }
+    if (
+      mapping.field_name.includes("condition") &&
+      !mapping.field_name.includes("_notes") &&
+      typeof value === "number"
+    ) {
+      return <PixelProgress showValue={false} value={value * 10} />;
+    }
+    return value;
+  };
 
-      if (aVal === bVal) return 0;
-      if (direction === "asc") {
-        return aVal > bVal ? 1 : -1;
-      } else {
-        return bVal > aVal ? 1 : -1;
-      }
+  // Sort the items first using raw values, then map to rendered rows
+  const sortedItems = [...items].sort((a, b) => {
+    if (!sortState) return 0;
+    const { key: sortKey, dir: direction } = sortState;
+    const aVal = a[sortKey];
+    const bVal = b[sortKey];
+
+    // Handle null/undefined values consistently
+    if (aVal == null && bVal == null) return 0;
+    if (aVal == null) return direction === "asc" ? -1 : 1;
+    if (bVal == null) return direction === "asc" ? 1 : -1;
+
+    // Use appropriate comparison based on value type
+    const isString = typeof aVal === "string" || typeof bVal === "string";
+    if (isString) {
+      const aStr = String(aVal).toLocaleLowerCase();
+      const bStr = String(bVal).toLocaleLowerCase();
+      if (aStr === bStr) return 0;
+      return direction === "asc"
+        ? (aStr > bStr ? 1 : -1)
+        : (bStr > aStr ? 1 : -1);
+    }
+
+    if (aVal === bVal) return 0;
+    return direction === "asc" ? aVal - bVal : bVal - aVal;
+  });
+
+  // Map sorted items to display rows with rendered components
+  const sortedData = sortedItems.map((item) => {
+    const row = {};
+    mappings.forEach((mapping) => {
+      row[mapping.field_name] = renderValue(mapping, item[mapping.field_name]);
     });
+    return row;
+  });
 
   const handleRowClick = (row, rowIndex) => {
     setIsDrawerOpen(true);

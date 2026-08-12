@@ -1,4 +1,4 @@
-import { PixelCarousel } from "@pxlkit/ui-kit";
+import { PixelCarousel, PixelDivider } from "@pxlkit/ui-kit";
 import { useState, useEffect } from "react";
 
 const API_BASE_URL = "http://localhost:5000";
@@ -47,7 +47,7 @@ export function ImageSpinner({ picFolder }) {
   }
 
   return (
-    <div className="p-4 ">
+    <div className="p-1">
       <center>
         <PixelCarousel
           aria-label="Item Photos"

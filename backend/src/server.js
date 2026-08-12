@@ -74,10 +74,15 @@ app.get('/api/photos/:photo_location', async (req, res) => {
         foto_content.push({ url: `/images/${photo_location}/${file}`.replace('.webp', ''), label: file.match(/_([^\.]+)\./)?.[1] || file });
       }
     });
+    if (foto_content.length === 0) {
+      console.log('No images found for photo_location:', photo_location);
+      foto_content.push({ url: `/images/no_images`, label: 'no images' });
+    }
     res.json(foto_content);
   } catch (err) {
     console.error('Error fetching photos:', err.message);
-    res.json([]);
+    foto_content.push({ url: `/images/no_images`, label: 'no images' });
+    res.json(foto_content);
   }
 });
 
