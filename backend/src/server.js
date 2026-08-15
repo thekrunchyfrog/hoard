@@ -276,24 +276,44 @@ app.post(
 
       const saved = [];
       for (const file of files) {
-        const ext = file.mimetype === 'image/webp' ? '.webp' : '.jpg';
+        const isWebp = file.mimetype === 'image/webp';
         const baseName = path
           .basename(file.originalname, path.extname(file.originalname))
           .replace(/[^a-zA-Z0-9_-]/g, '_') || 'image';
         const uniqueSuffix = `${Date.now()}_${Math.round(Math.random() * 1e9)}`;
-        const originalFilename = `${baseName}_${uniqueSuffix}${ext}`;
-        const thumbFilename = `${baseName}_${uniqueSuffix}_thumb.webp`;
+        const sharedName = `${baseName}_${uniqueSuffix}`;
 
-        await sharp(file.buffer).toFile(path.join(targetDir, originalFilename));
-        await sharp(file.buffer)
-          .resize({ width: THUMBNAIL_WIDTH })
-          .webp()
-          .toFile(path.join(targetDir, thumbFilename));
+        if (isWebp) {
+          // Already webp: resize in place instead of keeping a separate
+          // full-size original + identically-named thumbnail (which would
+          // collide on the same filename).
+          const filename = `${sharedName}.webp`;
+          await sharp(file.buffer)
+            .resize({ width: THUMBNAIL_WIDTH })
+            .webp()
+            .toFile(path.join(targetDir, filename));
 
-        saved.push({
-          original: `/images/${photoLocation}/${originalFilename}`,
-          thumbnail: `/images/${photoLocation}/${thumbFilename}`,
-        });
+          saved.push({
+            original: `/images/${photoLocation}/${filename}`,
+            thumbnail: `/images/${photoLocation}/${filename}`,
+          });
+        } else {
+          // JPG upload: keep the full-size original as-is, and generate a
+          // resized webp copy sharing the same base filename.
+          const originalFilename = `${sharedName}.jpg`;
+          const thumbFilename = `${sharedName}.webp`;
+
+          await sharp(file.buffer).toFile(path.join(targetDir, originalFilename));
+          await sharp(file.buffer)
+            .resize({ width: THUMBNAIL_WIDTH })
+            .webp()
+            .toFile(path.join(targetDir, thumbFilename));
+
+          saved.push({
+            original: `/images/${photoLocation}/${originalFilename}`,
+            thumbnail: `/images/${photoLocation}/${thumbFilename}`,
+          });
+        }
       }
 
       res.status(201).json({ photo_location: photoLocation, uploaded: saved });
