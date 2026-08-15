@@ -2,13 +2,33 @@ import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
 import * as mariadb from 'mariadb';
-import { readdir } from 'node:fs/promises';
+import { readdir, mkdir } from 'node:fs/promises';
+import path from 'node:path';
+import multer from 'multer';
+import sharp from 'sharp';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || '';
+
+// Root directory images are stored under. In Docker this is the shared
+// `webapp-images` volume mounted at /app/images (and also mounted into the
+// frontend container at /app/public/images so Vite/nginx can serve it
+// directly). For local, non-Docker dev it points at frontend/public/images.
+const IMAGES_ROOT = process.env.IMAGES_ROOT || '/app/images';
+
+// Thumbnail width (px) generated alongside the original upload. Height is
+// derived automatically to preserve the original aspect ratio.
+const THUMBNAIL_WIDTH = 350;
+
+const ALLOWED_UPLOAD_MIME_TYPES = new Set(['image/jpeg', 'image/webp']);
+
+// Accept uploads directly into memory - no size limit for this first pass,
+// per product decision. Files get written to disk ourselves after basic
+// mime-type validation, once we know the target photo_location folder.
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Middleware
 app.use(cors());
@@ -48,6 +68,22 @@ async function resolveCollectionTable(collectionTable) {
   );
   if (rows.length === 0) return null;
   return rows[0].collection_table;
+}
+
+// Look up a table's actual primary key column name. Collection tables don't
+// consistently follow a `<table>_id` naming convention (e.g. skipper_fashion
+// uses plain `id` while lunchbox uses `lunchbox_id`), so this asks MariaDB
+// directly instead of guessing from the table name. `table` must already be
+// a value that's passed through resolveCollectionTable's whitelist check.
+async function resolveIdColumn(table) {
+  const rows = await pool.query(
+    `SELECT COLUMN_NAME FROM information_schema.KEY_COLUMN_USAGE
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND CONSTRAINT_NAME = 'PRIMARY'
+     LIMIT 1`,
+    [table]
+  );
+  if (rows.length === 0) return null;
+  return rows[0].COLUMN_NAME;
 }
 
 // Require a shared-secret token (X-Admin-Token header) for write operations.
@@ -138,7 +174,10 @@ app.put('/api/collections/:id/items/:itemId', requireAdminToken, async (req, res
       return res.status(400).json({ error: 'No fields provided' });
     }
 
-    const idColumn = `${table}_id`;
+    const idColumn = await resolveIdColumn(table);
+    if (!idColumn) {
+      return res.status(500).json({ error: 'Could not resolve id column for collection' });
+    }
     const setClause = fields.map((f) => `\`${f}\` = ?`).join(', ');
     const values = fields.map((f) => body[f]);
 
@@ -159,7 +198,7 @@ app.get('/api/photos/:photo_location', async (req, res) => {
   let foto_content = [];
   try {
     const { photo_location } = req.params;
-    const directoryPath = `/app/images/${photo_location}`;
+    const directoryPath = path.join(IMAGES_ROOT, photo_location);
     const files = await readdir(directoryPath);
     files.forEach(file => {
       if (file.endsWith('.webp')) {
@@ -177,6 +216,93 @@ app.get('/api/photos/:photo_location', async (req, res) => {
     res.json(foto_content);
   }
 });
+
+// Upload one or more images for an item (admin only).
+//
+// The target folder is the item's own `photo_location` value (looked up
+// from the collection table by id, same whitelisting pattern as
+// resolveCollectionTable), created on demand if it doesn't exist yet.
+//
+// For each uploaded file we keep the original (jpg/webp) as uploaded, and
+// additionally generate a `<name>_thumb.webp` copy resized to a fixed
+// width (aspect ratio preserved) so the gallery/list views have something
+// light to load. No file count or size limit in this first pass.
+app.post(
+  '/api/collections/:id/items/:itemId/images',
+  requireAdminToken,
+  upload.array('images'),
+  async (req, res) => {
+    try {
+      const { id, itemId } = req.params;
+      const table = await resolveCollectionTable(id);
+      if (!table) {
+        return res.status(404).json({ error: 'Unknown collection' });
+      }
+
+      const idColumn = await resolveIdColumn(table);
+      if (!idColumn) {
+        return res.status(500).json({ error: 'Could not resolve id column for collection' });
+      }
+      const rows = await pool.query(
+        `SELECT photo_location FROM \`${table}\` WHERE \`${idColumn}\` = ?`,
+        [itemId]
+      );
+      if (rows.length === 0) {
+        return res.status(404).json({ error: 'Item not found' });
+      }
+      const photoLocation = rows[0].photo_location;
+      if (!photoLocation) {
+        return res.status(400).json({
+          error: 'Item has no photo_location set; cannot store images for it',
+        });
+      }
+
+      const files = req.files || [];
+      if (files.length === 0) {
+        return res.status(400).json({ error: 'No image files provided' });
+      }
+
+      const rejected = files.filter((f) => !ALLOWED_UPLOAD_MIME_TYPES.has(f.mimetype));
+      if (rejected.length > 0) {
+        return res.status(400).json({
+          error: `Only JPG or WEBP images are accepted (rejected: ${rejected
+            .map((f) => f.originalname)
+            .join(', ')})`,
+        });
+      }
+
+      const targetDir = path.join(IMAGES_ROOT, photoLocation);
+      await mkdir(targetDir, { recursive: true });
+
+      const saved = [];
+      for (const file of files) {
+        const ext = file.mimetype === 'image/webp' ? '.webp' : '.jpg';
+        const baseName = path
+          .basename(file.originalname, path.extname(file.originalname))
+          .replace(/[^a-zA-Z0-9_-]/g, '_') || 'image';
+        const uniqueSuffix = `${Date.now()}_${Math.round(Math.random() * 1e9)}`;
+        const originalFilename = `${baseName}_${uniqueSuffix}${ext}`;
+        const thumbFilename = `${baseName}_${uniqueSuffix}_thumb.webp`;
+
+        await sharp(file.buffer).toFile(path.join(targetDir, originalFilename));
+        await sharp(file.buffer)
+          .resize({ width: THUMBNAIL_WIDTH })
+          .webp()
+          .toFile(path.join(targetDir, thumbFilename));
+
+        saved.push({
+          original: `/images/${photoLocation}/${originalFilename}`,
+          thumbnail: `/images/${photoLocation}/${thumbFilename}`,
+        });
+      }
+
+      res.status(201).json({ photo_location: photoLocation, uploaded: saved });
+    } catch (err) {
+      console.error('Error uploading images:', err.message);
+      res.status(500).json({ error: 'Failed to upload images' });
+    }
+  }
+);
 
 // Health check
 app.get('/api/health', (req, res) => {

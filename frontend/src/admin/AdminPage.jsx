@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import {
   fetchCollections,
   fetchItems,
@@ -222,13 +223,21 @@ export function AdminPage() {
                           {String(item[m.field_name] ?? "-")}
                         </td>
                       ))}
-                    <td className="p-2">
+                    <td className="p-2 space-x-3">
                       <button
                         onClick={() => handleEdit(item)}
                         className="text-blue-600 hover:underline"
                       >
                         Edit
                       </button>
+                      {idField && item[idField.field_name] != null && (
+                        <Link
+                          to={`/admin/${selectedCollection}/${item[idField.field_name]}/images`}
+                          className="text-blue-600 hover:underline"
+                        >
+                          Images
+                        </Link>
+                      )}
                     </td>
                   </tr>
                 ))}

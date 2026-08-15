@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HoardHeader, CollectionSelection, Drawer } from "./assets/components";
 import { AdminPage } from "./admin/AdminPage";
+import { ImageUploader } from "./admin/ImageUploader";
 
 function HomePage() {
   return (
@@ -21,6 +22,10 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/admin" element={<AdminPage />} />
+            <Route
+              path="/admin/:collection/:itemId/images"
+              element={<ImageUploader />}
+            />
           </Routes>
         </div>
       </div>

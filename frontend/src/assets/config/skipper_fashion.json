@@ -34,5 +34,10 @@
   {
     "field_name": "created_at",
     "header_name": "Date Added"
+  },
+  {
+    "field_name": "id",
+    "header_name": "ID",
+    "hidden": true
   }
 ]
