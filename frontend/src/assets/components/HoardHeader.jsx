@@ -1,4 +1,5 @@
 import logo from "../images/dragonLogo.webp";
+import { Link } from "react-router-dom";
 
 export function HoardHeader() {
   return (
@@ -19,6 +20,14 @@ export function HoardHeader() {
         <div className="text-sm font-pixel tracking-wider font-semibold leading-tight text-retro-green ml-auto mt-3">
           - The Hobbit, J.R.R. Tolkien
         </div>
+      </div>
+      <div className="ml-auto flex items-start">
+        <Link
+          to="/admin"
+          className="text-xs font-pixel tracking-wider font-semibold text-retro-green hover:text-retro-red underline"
+        >
+          admin
+        </Link>
       </div>
     </div>
   );
