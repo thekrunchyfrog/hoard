@@ -280,8 +280,7 @@ app.post(
         const baseName = path
           .basename(file.originalname, path.extname(file.originalname))
           .replace(/[^a-zA-Z0-9_-]/g, '_') || 'image';
-        const uniqueSuffix = `${Date.now()}_${Math.round(Math.random() * 1e9)}`;
-        const sharedName = `${baseName}_${uniqueSuffix}`;
+        const sharedName = `${baseName}`;
 
         if (isWebp) {
           // Already webp: resize in place instead of keeping a separate
@@ -300,7 +299,7 @@ app.post(
         } else {
           // JPG upload: keep the full-size original as-is, and generate a
           // resized webp copy sharing the same base filename.
-          const originalFilename = `${sharedName}.jpg`;
+          const originalFilename = `${sharedName}.jpeg`;
           const thumbFilename = `${sharedName}.webp`;
 
           await sharp(file.buffer).toFile(path.join(targetDir, originalFilename));
