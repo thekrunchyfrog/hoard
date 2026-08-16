@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import {
   fetchCollections,
   fetchItems,
   createItem,
   updateItem,
+  deleteItemImages,
   getAdminToken,
   setAdminToken,
 } from "./adminApi";
-import { collectionMappings, getIdField } from "./adminConfig";
+import { collectionMappings, getIdField, getNameField } from "./adminConfig";
 import { AdminForm } from "./AdminForm";
 
 export function AdminPage() {
@@ -20,6 +22,9 @@ export function AdminPage() {
   const [error, setError] = useState(null);
   const [editingItem, setEditingItem] = useState(null); // null = not editing, {} = adding new
   const [showForm, setShowForm] = useState(false);
+  const [sortDir, setSortDir] = useState(null); // null | "asc" | "desc"
+  const [deletingImagesFor, setDeletingImagesFor] = useState(null); // itemId currently being deleted
+  const [imageActionMessage, setImageActionMessage] = useState(null);
 
   useEffect(() => {
     fetchCollections()
@@ -31,6 +36,7 @@ export function AdminPage() {
     if (!selectedCollection) return;
     setLoading(true);
     setError(null);
+    setSortDir(null);
     fetchItems(selectedCollection)
       .then(setItems)
       .catch((err) => setError("Failed to load items: " + err.message))
@@ -51,6 +57,25 @@ export function AdminPage() {
 
   const mappings = selectedCollection ? collectionMappings[selectedCollection] : null;
   const idField = mappings ? getIdField(mappings) : null;
+  const nameField = mappings ? getNameField(mappings) : null;
+
+  const handleSortByName = () => {
+    setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
+  };
+
+  const displayedItems = (() => {
+    if (!sortDir || !nameField) return items;
+    const field = nameField.field_name;
+    const sorted = [...items].sort((a, b) => {
+      const av = String(a[field] ?? "").toLowerCase();
+      const bv = String(b[field] ?? "").toLowerCase();
+      if (av < bv) return -1;
+      if (av > bv) return 1;
+      return 0;
+    });
+    if (sortDir === "desc") sorted.reverse();
+    return sorted;
+  })();
 
   const reloadItems = () => {
     if (!selectedCollection) return;
@@ -65,6 +90,31 @@ export function AdminPage() {
   const handleEdit = (item) => {
     setEditingItem(item);
     setShowForm(true);
+  };
+
+  const handleDeleteImages = async (item) => {
+    if (!idField) return;
+    const itemId = item[idField.field_name];
+    const label = nameField ? item[nameField.field_name] : `#${itemId}`;
+    const confirmed = window.confirm(
+      `Delete ALL images for "${label}"? This cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    setImageActionMessage(null);
+    setDeletingImagesFor(itemId);
+    try {
+      const res = await deleteItemImages(selectedCollection, itemId);
+      setImageActionMessage(
+        `Deleted ${res.deleted ?? 0} image(s) for "${label}".`
+      );
+    } catch (err) {
+      setImageActionMessage(
+        `Failed to delete images for "${label}": ${err.message}`
+      );
+    } finally {
+      setDeletingImagesFor(null);
+    }
   };
 
   const handleFormSubmit = async (payload) => {
@@ -120,6 +170,12 @@ export function AdminPage() {
       {error && (
         <div className="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 px-4 py-3 rounded-lg mb-4">
           {error}
+        </div>
+      )}
+
+      {imageActionMessage && (
+        <div className="bg-blue-100 dark:bg-blue-900 border border-blue-400 dark:border-blue-700 text-blue-700 dark:text-blue-200 px-4 py-3 rounded-lg mb-4">
+          {imageActionMessage}
         </div>
       )}
 
@@ -201,16 +257,32 @@ export function AdminPage() {
                 <tr className="text-left border-b">
                   {mappings
                     .filter((m) => !m.hidden)
-                    .map((m) => (
-                      <th key={m.field_name} className="p-2">
-                        {m.header_name}
-                      </th>
-                    ))}
+                    .map((m) =>
+                      nameField && m.field_name === nameField.field_name ? (
+                        <th key={m.field_name} className="p-2">
+                          <button
+                            type="button"
+                            onClick={handleSortByName}
+                            className="flex items-center gap-1 font-semibold hover:underline"
+                            title="Sort by name"
+                          >
+                            {m.header_name}
+                            <span className="text-xs">
+                              {sortDir === "asc" ? "▲" : sortDir === "desc" ? "▼" : "⇕"}
+                            </span>
+                          </button>
+                        </th>
+                      ) : (
+                        <th key={m.field_name} className="p-2">
+                          {m.header_name}
+                        </th>
+                      )
+                    )}
                   <th className="p-2">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {items.map((item, idx) => (
+                {displayedItems.map((item, idx) => (
                   <tr
                     key={idField ? item[idField.field_name] : idx}
                     className="border-b hover:bg-slate-50 dark:hover:bg-slate-800"
@@ -222,13 +294,35 @@ export function AdminPage() {
                           {String(item[m.field_name] ?? "-")}
                         </td>
                       ))}
-                    <td className="p-2">
+                    <td className="p-2 space-x-3">
                       <button
                         onClick={() => handleEdit(item)}
                         className="text-blue-600 hover:underline"
                       >
                         Edit
                       </button>
+                      {idField && item[idField.field_name] != null && (
+                        <>
+                          <Link
+                            to={`/admin/${selectedCollection}/${item[idField.field_name]}/images`}
+                            state={{
+                              itemName: nameField ? item[nameField.field_name] : null,
+                            }}
+                            className="text-blue-600 hover:underline"
+                          >
+                            Add Images
+                          </Link>
+                          <button
+                            onClick={() => handleDeleteImages(item)}
+                            disabled={deletingImagesFor === item[idField.field_name]}
+                            className="text-red-600 hover:underline disabled:opacity-50"
+                          >
+                            {deletingImagesFor === item[idField.field_name]
+                              ? "Deleting..."
+                              : "Delete Images"}
+                          </button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}

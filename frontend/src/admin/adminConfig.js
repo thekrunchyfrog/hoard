@@ -36,5 +36,19 @@ export function inferFieldType(mapping) {
 }
 
 export function getIdField(mappings) {
-  return mappings.find((m) => m.hidden && m.field_name.endsWith("_id"));
+  // Collection tables don't consistently follow a `<table>_id` naming
+  // convention (skipper_fashion's primary key is plain `id`, lunchbox's is
+  // `lunchbox_id`), so accept either a hidden field literally named `id`
+  // or one ending in `_id`.
+  return mappings.find(
+    (m) => m.hidden && (m.field_name === "id" || m.field_name.endsWith("_id"))
+  );
+}
+
+// Best-effort lookup of a collection's "display name" field (e.g.
+// lunchbox_name, fashion_name) for use anywhere we want a human-readable
+// label instead of the raw id. Falls back to null if no field ending in
+// `_name` is found.
+export function getNameField(mappings) {
+  return mappings.find((m) => !m.hidden && m.field_name.endsWith("_name"));
 }

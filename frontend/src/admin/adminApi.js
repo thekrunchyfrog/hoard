@@ -49,6 +49,40 @@ async function request(path, options = {}) {
   return response.json();
 }
 
+// Delete all images stored for an item (admin only). Same auth/error
+// handling shape as request(), but kept separate since there's no JSON
+// body to send on a DELETE here.
+export async function deleteItemImages(collectionTable, itemId) {
+  const token = getAdminToken();
+  const headers = {};
+  if (token) {
+    headers["X-Admin-Token"] = token;
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/collections/${collectionTable}/items/${itemId}/images`,
+    {
+      method: "DELETE",
+      headers,
+    }
+  );
+
+  if (!response.ok) {
+    let message = `Delete failed (${response.status})`;
+    try {
+      const body = await response.json();
+      if (body?.error) message = body.error;
+    } catch {
+      // ignore body parse failures, use default message
+    }
+    const err = new Error(message);
+    err.status = response.status;
+    throw err;
+  }
+
+  return response.json();
+}
+
 export function fetchCollections() {
   return request("/collections");
 }
@@ -69,4 +103,42 @@ export function updateItem(collectionTable, itemId, data) {
     method: "PUT",
     body: JSON.stringify(data),
   });
+}
+
+// Upload one or more image files for an item. Unlike the JSON `request()`
+// helper above, this sends multipart/form-data so we don't set a
+// Content-Type header ourselves - the browser sets the multipart boundary.
+export async function uploadItemImages(collectionTable, itemId, files) {
+  const token = getAdminToken();
+  const formData = new FormData();
+  files.forEach((file) => formData.append("images", file));
+
+  const headers = {};
+  if (token) {
+    headers["X-Admin-Token"] = token;
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/collections/${collectionTable}/items/${itemId}/images`,
+    {
+      method: "POST",
+      headers,
+      body: formData,
+    }
+  );
+
+  if (!response.ok) {
+    let message = `Upload failed (${response.status})`;
+    try {
+      const body = await response.json();
+      if (body?.error) message = body.error;
+    } catch {
+      // ignore body parse failures, use default message
+    }
+    const err = new Error(message);
+    err.status = response.status;
+    throw err;
+  }
+
+  return response.json();
 }
