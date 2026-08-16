@@ -4,11 +4,13 @@ import { Link } from "react-router-dom";
 export function HoardHeader() {
   return (
     <div className="flex flex-row gap-10 bg-black px-6 py-4 rounded-t-xl">
-      <img
-        src={logo}
-        alt="Dragon Logo"
-        className="w-50 h-50 object-contain rounded-t-xl mt-5"
-      />
+      <Link to="/">
+        <img
+          src={logo}
+          alt="Dragon Logo"
+          className="w-50 h-50 object-contain rounded-t-xl mt-5"
+        />
+      </Link>
       <div className="flex flex-col justify-center">
         <h1 className="text-3xl font-pixel uppercase tracking-wider font-bold text-retro-red mt-5">
           Hoard
