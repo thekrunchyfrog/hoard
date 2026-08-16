@@ -49,6 +49,40 @@ async function request(path, options = {}) {
   return response.json();
 }
 
+// Delete all images stored for an item (admin only). Same auth/error
+// handling shape as request(), but kept separate since there's no JSON
+// body to send on a DELETE here.
+export async function deleteItemImages(collectionTable, itemId) {
+  const token = getAdminToken();
+  const headers = {};
+  if (token) {
+    headers["X-Admin-Token"] = token;
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/collections/${collectionTable}/items/${itemId}/images`,
+    {
+      method: "DELETE",
+      headers,
+    }
+  );
+
+  if (!response.ok) {
+    let message = `Delete failed (${response.status})`;
+    try {
+      const body = await response.json();
+      if (body?.error) message = body.error;
+    } catch {
+      // ignore body parse failures, use default message
+    }
+    const err = new Error(message);
+    err.status = response.status;
+    throw err;
+  }
+
+  return response.json();
+}
+
 export function fetchCollections() {
   return request("/collections");
 }

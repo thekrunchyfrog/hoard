@@ -5,6 +5,7 @@ import {
   fetchItems,
   createItem,
   updateItem,
+  deleteItemImages,
   getAdminToken,
   setAdminToken,
 } from "./adminApi";
@@ -22,6 +23,8 @@ export function AdminPage() {
   const [editingItem, setEditingItem] = useState(null); // null = not editing, {} = adding new
   const [showForm, setShowForm] = useState(false);
   const [sortDir, setSortDir] = useState(null); // null | "asc" | "desc"
+  const [deletingImagesFor, setDeletingImagesFor] = useState(null); // itemId currently being deleted
+  const [imageActionMessage, setImageActionMessage] = useState(null);
 
   useEffect(() => {
     fetchCollections()
@@ -89,6 +92,31 @@ export function AdminPage() {
     setShowForm(true);
   };
 
+  const handleDeleteImages = async (item) => {
+    if (!idField) return;
+    const itemId = item[idField.field_name];
+    const label = nameField ? item[nameField.field_name] : `#${itemId}`;
+    const confirmed = window.confirm(
+      `Delete ALL images for "${label}"? This cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    setImageActionMessage(null);
+    setDeletingImagesFor(itemId);
+    try {
+      const res = await deleteItemImages(selectedCollection, itemId);
+      setImageActionMessage(
+        `Deleted ${res.deleted ?? 0} image(s) for "${label}".`
+      );
+    } catch (err) {
+      setImageActionMessage(
+        `Failed to delete images for "${label}": ${err.message}`
+      );
+    } finally {
+      setDeletingImagesFor(null);
+    }
+  };
+
   const handleFormSubmit = async (payload) => {
     if (editingItem && idField && editingItem[idField.field_name] != null) {
       await updateItem(selectedCollection, editingItem[idField.field_name], payload);
@@ -142,6 +170,12 @@ export function AdminPage() {
       {error && (
         <div className="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 px-4 py-3 rounded-lg mb-4">
           {error}
+        </div>
+      )}
+
+      {imageActionMessage && (
+        <div className="bg-blue-100 dark:bg-blue-900 border border-blue-400 dark:border-blue-700 text-blue-700 dark:text-blue-200 px-4 py-3 rounded-lg mb-4">
+          {imageActionMessage}
         </div>
       )}
 
@@ -268,15 +302,26 @@ export function AdminPage() {
                         Edit
                       </button>
                       {idField && item[idField.field_name] != null && (
-                        <Link
-                          to={`/admin/${selectedCollection}/${item[idField.field_name]}/images`}
-                          state={{
-                            itemName: nameField ? item[nameField.field_name] : null,
-                          }}
-                          className="text-blue-600 hover:underline"
-                        >
-                          Images
-                        </Link>
+                        <>
+                          <Link
+                            to={`/admin/${selectedCollection}/${item[idField.field_name]}/images`}
+                            state={{
+                              itemName: nameField ? item[nameField.field_name] : null,
+                            }}
+                            className="text-blue-600 hover:underline"
+                          >
+                            Add Images
+                          </Link>
+                          <button
+                            onClick={() => handleDeleteImages(item)}
+                            disabled={deletingImagesFor === item[idField.field_name]}
+                            className="text-red-600 hover:underline disabled:opacity-50"
+                          >
+                            {deletingImagesFor === item[idField.field_name]
+                              ? "Deleting..."
+                              : "Delete Images"}
+                          </button>
+                        </>
                       )}
                     </td>
                   </tr>

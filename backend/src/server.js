@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
 import * as mariadb from 'mariadb';
-import { readdir, mkdir } from 'node:fs/promises';
+import { readdir, mkdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 import multer from 'multer';
 import sharp from 'sharp';
@@ -320,6 +320,62 @@ app.post(
     } catch (err) {
       console.error('Error uploading images:', err.message);
       res.status(500).json({ error: 'Failed to upload images' });
+    }
+  }
+);
+
+// Delete all images for an item (admin only).
+//
+// Looks up the item's `photo_location` the same way the upload route does,
+// then removes every file inside that folder on disk. The folder itself is
+// left in place (empty) so future uploads can recreate it without extra
+// mkdir handling.
+app.delete(
+  '/api/collections/:id/items/:itemId/images',
+  requireAdminToken,
+  async (req, res) => {
+    try {
+      const { id, itemId } = req.params;
+      const table = await resolveCollectionTable(id);
+      if (!table) {
+        return res.status(404).json({ error: 'Unknown collection' });
+      }
+
+      const idColumn = await resolveIdColumn(table);
+      if (!idColumn) {
+        return res.status(500).json({ error: 'Could not resolve id column for collection' });
+      }
+      const rows = await pool.query(
+        `SELECT photo_location FROM \`${table}\` WHERE \`${idColumn}\` = ?`,
+        [itemId]
+      );
+      if (rows.length === 0) {
+        return res.status(404).json({ error: 'Item not found' });
+      }
+      const photoLocation = rows[0].photo_location;
+      if (!photoLocation) {
+        return res.status(400).json({
+          error: 'Item has no photo_location set; nothing to delete',
+        });
+      }
+
+      const targetDir = path.join(IMAGES_ROOT, photoLocation);
+      let deletedCount = 0;
+      try {
+        const files = await readdir(targetDir);
+        for (const file of files) {
+          await rm(path.join(targetDir, file), { force: true });
+          deletedCount += 1;
+        }
+      } catch (err) {
+        if (err.code !== 'ENOENT') throw err;
+        // Folder doesn't exist - nothing to delete, treat as success.
+      }
+
+      res.json({ photo_location: photoLocation, deleted: deletedCount });
+    } catch (err) {
+      console.error('Error deleting images:', err.message);
+      res.status(500).json({ error: 'Failed to delete images' });
     }
   }
 );
