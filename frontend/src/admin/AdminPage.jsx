@@ -21,6 +21,7 @@ export function AdminPage() {
   const [error, setError] = useState(null);
   const [editingItem, setEditingItem] = useState(null); // null = not editing, {} = adding new
   const [showForm, setShowForm] = useState(false);
+  const [sortDir, setSortDir] = useState(null); // null | "asc" | "desc"
 
   useEffect(() => {
     fetchCollections()
@@ -32,6 +33,7 @@ export function AdminPage() {
     if (!selectedCollection) return;
     setLoading(true);
     setError(null);
+    setSortDir(null);
     fetchItems(selectedCollection)
       .then(setItems)
       .catch((err) => setError("Failed to load items: " + err.message))
@@ -53,6 +55,24 @@ export function AdminPage() {
   const mappings = selectedCollection ? collectionMappings[selectedCollection] : null;
   const idField = mappings ? getIdField(mappings) : null;
   const nameField = mappings ? getNameField(mappings) : null;
+
+  const handleSortByName = () => {
+    setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
+  };
+
+  const displayedItems = (() => {
+    if (!sortDir || !nameField) return items;
+    const field = nameField.field_name;
+    const sorted = [...items].sort((a, b) => {
+      const av = String(a[field] ?? "").toLowerCase();
+      const bv = String(b[field] ?? "").toLowerCase();
+      if (av < bv) return -1;
+      if (av > bv) return 1;
+      return 0;
+    });
+    if (sortDir === "desc") sorted.reverse();
+    return sorted;
+  })();
 
   const reloadItems = () => {
     if (!selectedCollection) return;
@@ -203,16 +223,32 @@ export function AdminPage() {
                 <tr className="text-left border-b">
                   {mappings
                     .filter((m) => !m.hidden)
-                    .map((m) => (
-                      <th key={m.field_name} className="p-2">
-                        {m.header_name}
-                      </th>
-                    ))}
+                    .map((m) =>
+                      nameField && m.field_name === nameField.field_name ? (
+                        <th key={m.field_name} className="p-2">
+                          <button
+                            type="button"
+                            onClick={handleSortByName}
+                            className="flex items-center gap-1 font-semibold hover:underline"
+                            title="Sort by name"
+                          >
+                            {m.header_name}
+                            <span className="text-xs">
+                              {sortDir === "asc" ? "▲" : sortDir === "desc" ? "▼" : "⇕"}
+                            </span>
+                          </button>
+                        </th>
+                      ) : (
+                        <th key={m.field_name} className="p-2">
+                          {m.header_name}
+                        </th>
+                      )
+                    )}
                   <th className="p-2">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {items.map((item, idx) => (
+                {displayedItems.map((item, idx) => (
                   <tr
                     key={idField ? item[idField.field_name] : idx}
                     className="border-b hover:bg-slate-50 dark:hover:bg-slate-800"
