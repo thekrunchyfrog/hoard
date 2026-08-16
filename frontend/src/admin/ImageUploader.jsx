@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { uploadItemImages } from "./adminApi";
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/webp"];
@@ -14,6 +14,8 @@ function isAcceptedFile(file) {
 export function ImageUploader() {
   const { collection, itemId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const itemName = location.state?.itemName;
   const fileInputRef = useRef(null);
 
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -98,8 +100,8 @@ export function ImageUploader() {
       </div>
 
       <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-        Collection: <code>{collection}</code> &middot; Item ID:{" "}
-        <code>{itemId}</code>
+        Collection: <code>{collection}</code> &middot; Item:{" "}
+        <code>{itemName || `#${itemId}`}</code>
       </p>
 
       {error && (

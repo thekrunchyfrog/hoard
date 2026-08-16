@@ -44,3 +44,11 @@ export function getIdField(mappings) {
     (m) => m.hidden && (m.field_name === "id" || m.field_name.endsWith("_id"))
   );
 }
+
+// Best-effort lookup of a collection's "display name" field (e.g.
+// lunchbox_name, fashion_name) for use anywhere we want a human-readable
+// label instead of the raw id. Falls back to null if no field ending in
+// `_name` is found.
+export function getNameField(mappings) {
+  return mappings.find((m) => !m.hidden && m.field_name.endsWith("_name"));
+}

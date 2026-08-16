@@ -8,7 +8,7 @@ import {
   getAdminToken,
   setAdminToken,
 } from "./adminApi";
-import { collectionMappings, getIdField } from "./adminConfig";
+import { collectionMappings, getIdField, getNameField } from "./adminConfig";
 import { AdminForm } from "./AdminForm";
 
 export function AdminPage() {
@@ -52,6 +52,7 @@ export function AdminPage() {
 
   const mappings = selectedCollection ? collectionMappings[selectedCollection] : null;
   const idField = mappings ? getIdField(mappings) : null;
+  const nameField = mappings ? getNameField(mappings) : null;
 
   const reloadItems = () => {
     if (!selectedCollection) return;
@@ -233,6 +234,9 @@ export function AdminPage() {
                       {idField && item[idField.field_name] != null && (
                         <Link
                           to={`/admin/${selectedCollection}/${item[idField.field_name]}/images`}
+                          state={{
+                            itemName: nameField ? item[nameField.field_name] : null,
+                          }}
                           className="text-blue-600 hover:underline"
                         >
                           Images
